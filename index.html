@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="A private browser-based bulk image to WebP converter with resizing, quality controls, previews, and ZIP downloads." />
+  <meta name="description" content="A private browser-based bulk image converter with WebP by default, plus JPG and PNG output, resizing, quality controls, previews, and ZIP downloads." />
   <title>HB WebP Studio — Bulk Image Converter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,13 +30,7 @@
   --radius-lg: 20px;
   --radius-md: 14px;
 }
-a {
-    color: #5a4ff3;
-    font-weight: 900;
-    text-decoration: unset;
-    font-size: 17px;
-    font-family: cursive;
-}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -143,6 +137,10 @@ input[type="range"] { width: 100%; accent-color: var(--primary); margin: 17px 0 
 .mini-badge { padding: 4px 7px; border-radius: 6px; font-size: 8px; letter-spacing: .08em; color: var(--success); background: var(--success-soft); font-weight: 800; }
 .zip-input-wrap input { width: 100%; margin-top: 11px; border: 1px solid var(--line); background: var(--surface-solid); color: var(--text); border-radius: 12px; padding: 11px 12px; outline: none; font-size: 11px; font-weight: 600; }
 .zip-input-wrap input:focus, .input-with-unit:focus-within { border-color: #aaa3ff; box-shadow: 0 0 0 3px rgba(90,79,243,.08); }
+.format-select { width: 100%; margin-top: 11px; border: 1px solid var(--line); background: var(--surface-solid); color: var(--text); border-radius: 12px; padding: 11px 12px; outline: none; font-size: 11px; font-weight: 700; }
+.format-select:focus { border-color: #aaa3ff; box-shadow: 0 0 0 3px rgba(90,79,243,.08); }
+.quality-block.is-lossless input[type="range"] { opacity: .38; pointer-events: none; }
+.quality-block.is-lossless .range-labels { opacity: .38; }
 .field-help { margin: 8px 0 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
 .settings-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 16px; }
 .settings-summary div { border: 1px solid var(--line); border-radius: 11px; padding: 9px 7px; background: var(--surface-2); text-align: center; }
@@ -307,8 +305,8 @@ body.dark .progress-track { background: #283247; }
     <main>
       <section class="hero">
         <div class="eyebrow">FAST • PRIVATE • BULK READY</div>
-        <h1>Convert images to <span>WebP</span><br />without losing your workflow.</h1>
-        <p>Drop your product images, tune the compression once, and export clean WebP files in bulk. Everything is processed locally in your browser.by <span><a href="https://www.linkedin.com/in/hasan112/">HASAN</a></span></p>
+        <h1>Convert images to <span>WebP</span><br />or switch formats in one click.</h1>
+        <p>Drop your product images, keep WebP as the default, or switch the whole batch to JPG or PNG. Everything is processed locally in your browser.</p>
 
         <div class="hero-badges" aria-label="Key benefits">
           <span><svg viewBox="0 0 24 24"><path d="m9.2 16.6-4.1-4.1 1.4-1.4 2.7 2.7 8.3-8.3 1.4 1.4-9.7 9.7Z"/></svg>Same filenames</span>
@@ -317,7 +315,7 @@ body.dark .progress-track { background: #283247; }
         </div>
       </section>
 
-      <section class="workspace" aria-label="WebP conversion workspace">
+      <section class="workspace" aria-label="Image conversion workspace">
         <aside class="settings-card">
           <div class="section-heading">
             <div>
@@ -327,9 +325,22 @@ body.dark .progress-track { background: #283247; }
             <button id="resetSettings" class="text-button" type="button">Reset</button>
           </div>
 
-          <div class="setting-block quality-block">
+          <div class="setting-block">
             <div class="setting-label-row">
-              <label for="qualityRange">WebP quality</label>
+              <label for="outputFormat">Output format</label>
+              <span class="mini-badge">WEBP DEFAULT</span>
+            </div>
+            <select id="outputFormat" class="format-select">
+              <option value="webp" selected>WebP</option>
+              <option value="jpeg">JPG / JPEG</option>
+              <option value="png">PNG</option>
+            </select>
+            <p class="field-help">Upload PNG, JPG, WebP, AVIF, GIF, BMP or SVG, then export the whole batch in your selected format.</p>
+          </div>
+
+          <div class="setting-block quality-block" id="qualityBlock">
+            <div class="setting-label-row">
+              <label for="qualityRange" id="qualityLabel">WebP quality</label>
               <output id="qualityValue" for="qualityRange">82%</output>
             </div>
             <input id="qualityRange" type="range" min="10" max="100" value="82" step="1" />
@@ -365,11 +376,11 @@ body.dark .progress-track { background: #283247; }
             <div class="zip-input-wrap">
               <input id="zipName" type="text" value="converted-images-by-HB.zip" spellcheck="false" />
             </div>
-            <p class="field-help">Uses the first image title (up to 10 words) + <b>-by-HB.zip</b>. Individual WebP files keep their original names.</p>
+            <p class="field-help">Uses the first image title (up to 10 words), removes a trailing <b>-img-01</b>, then adds <b>-by-HB.zip</b>. Individual files keep their original base names.</p>
           </div>
 
           <div class="settings-summary">
-            <div><span>Format</span><strong>WebP</strong></div>
+            <div><span>Format</span><strong id="summaryFormat">WebP</strong></div>
             <div><span>Processing</span><strong>Browser</strong></div>
             <div><span>Metadata</span><strong>Removed</strong></div>
           </div>
@@ -418,13 +429,13 @@ body.dark .progress-track { background: #283247; }
             <div class="queue-footer">
               <div class="totals">
                 <div><span>Original</span><strong id="totalOriginal">0 KB</strong></div>
-                <div><span>WebP</span><strong id="totalWebp">—</strong></div>
+                <div><span id="outputTotalLabel">WebP</span><strong id="totalOutput">—</strong></div>
                 <div class="saved-total"><span>Saved</span><strong id="totalSaved">—</strong></div>
               </div>
               <div class="footer-buttons">
                 <button id="convertButton" class="primary-button convert-button" type="button">
                   <svg viewBox="0 0 24 24"><path d="M7 7h11l-3.5-3.5L16 2l6 6-6 6-1.5-1.5L18 9H7a3 3 0 0 0-3 3v1H2v-1a5 5 0 0 1 5-5Zm10 10H6l3.5 3.5L8 22l-6-6 6-6 1.5 1.5L6 15h11a3 3 0 0 0 3-3v-1h2v1a5 5 0 0 1-5 5Z"/></svg>
-                  Convert to WebP
+                  <span id="convertButtonText">Convert to WebP</span>
                 </button>
                 <button id="downloadZipButton" class="success-button" type="button" hidden>
                   <svg viewBox="0 0 24 24"><path d="M11 3h2v10.17l3.59-3.58L18 11l-6 6-6-6 1.41-1.41L11 13.17V3ZM4 19h16v2H4v-2Z"/></svg>
@@ -447,13 +458,13 @@ body.dark .progress-track { background: #283247; }
         </article>
         <article>
           <span class="feature-icon"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3V5Zm2 2v10h14V7H5Zm2 8 3-4 2 2 3-4 2 6H7Z"/></svg></span>
-          <div><h3>Smart naming</h3><p>Each WebP keeps its original base filename; only the archive gets “-by-HB”.</p></div>
+          <div><h3>Flexible formats</h3><p>WebP stays selected by default, with JPG and PNG available for the full batch whenever you need them.</p></div>
         </article>
       </section>
     </main>
 
     <footer>
-      <span>HB WebP Studio</span>
+      <span><a href="https://www.linkedin.com/in/hasan112/">HASAN</a></span>
       <span>Built for fast product-image workflows.</span>
     </footer>
   </div>
@@ -474,7 +485,7 @@ body.dark .progress-track { background: #283247; }
         </div>
       </div>
       <div class="file-actions">
-        <button class="item-download icon-button" type="button" title="Download WebP" aria-label="Download WebP" hidden>
+        <button class="item-download icon-button" type="button" title="Download converted image" aria-label="Download converted image" hidden>
           <svg viewBox="0 0 24 24"><path d="M11 3h2v10.17l3.59-3.58L18 11l-6 6-6-6 1.41-1.41L11 13.17V3ZM4 19h16v2H4v-2Z"/></svg>
         </button>
         <button class="item-remove icon-button remove-button" type="button" title="Remove" aria-label="Remove image">
@@ -494,6 +505,9 @@ body.dark .progress-track { background: #283247; }
 
   const els = {
     themeToggle: $("#themeToggle"),
+    outputFormat: $("#outputFormat"),
+    qualityBlock: $("#qualityBlock"),
+    qualityLabel: $("#qualityLabel"),
     qualityRange: $("#qualityRange"),
     qualityValue: $("#qualityValue"),
     resizeToggle: $("#resizeToggle"),
@@ -514,7 +528,10 @@ body.dark .progress-track { background: #283247; }
     convertButton: $("#convertButton"),
     downloadZipButton: $("#downloadZipButton"),
     totalOriginal: $("#totalOriginal"),
-    totalWebp: $("#totalWebp"),
+    totalOutput: $("#totalOutput"),
+    outputTotalLabel: $("#outputTotalLabel"),
+    summaryFormat: $("#summaryFormat"),
+    convertButtonText: $("#convertButtonText"),
     totalSaved: $("#totalSaved"),
     overallProgress: $("#overallProgress"),
     progressStatus: $("#progressStatus"),
@@ -558,12 +575,24 @@ body.dark .progress-track { background: #283247; }
     return name.replace(/\.[^/.]+$/, "");
   }
 
-  function webpFilename(originalName) {
-    return `${stripExtension(originalName)}.webp`;
+  const outputFormats = {
+    webp: { label: "WebP", mime: "image/webp", extension: "webp", usesQuality: true },
+    jpeg: { label: "JPG", mime: "image/jpeg", extension: "jpg", usesQuality: true },
+    png: { label: "PNG", mime: "image/png", extension: "png", usesQuality: false }
+  };
+
+  function getOutputFormat(key = els.outputFormat?.value || "webp") {
+    return outputFormats[key] || outputFormats.webp;
+  }
+
+  function outputFilename(originalName, formatKey = els.outputFormat?.value || "webp") {
+    const format = getOutputFormat(formatKey);
+    return `${stripExtension(originalName)}.${format.extension}`;
   }
 
   function cleanZipBase(name) {
     const words = stripExtension(name)
+      .replace(/(?:[-_\s]+img[-_\s]*01)$/i, "")
       .replace(/[_-]+/g, " ")
       .replace(/[^\p{L}\p{N}\s]+/gu, " ")
       .replace(/\s+/g, " ")
@@ -592,21 +621,40 @@ body.dark .progress-track { background: #283247; }
   }
 
   function updateSettingsUI() {
-    els.qualityValue.textContent = `${els.qualityRange.value}%`;
+    const format = getOutputFormat();
+    const isLossless = !format.usesQuality;
+    els.qualityLabel.textContent = isLossless ? `${format.label} quality` : `${format.label} quality`;
+    els.qualityValue.textContent = isLossless ? "Lossless" : `${els.qualityRange.value}%`;
+    els.qualityRange.disabled = isLossless;
+    els.qualityBlock.classList.toggle("is-lossless", isLossless);
     els.resizeFields.classList.toggle("is-disabled", !els.resizeToggle.checked);
+    els.summaryFormat.textContent = format.label;
+    els.outputTotalLabel.textContent = format.label;
+    els.convertButtonText.textContent = `Convert to ${format.label}`;
+
+    $$(".item-download", els.queueList).forEach(button => {
+      button.title = `Download ${format.label}`;
+      button.setAttribute("aria-label", `Download ${format.label}`);
+    });
   }
 
   function resetSettings() {
+    els.outputFormat.value = "webp";
     els.qualityRange.value = "82";
     els.resizeToggle.checked = false;
     els.maxWidth.value = "2000";
     els.dontUpscale.checked = true;
     updateSettingsUI();
+    if (queue.some(item => item.outputBlob)) invalidateResults();
     toast("Settings reset.");
   }
 
   function getSettings() {
+    const formatKey = els.outputFormat.value;
+    const format = getOutputFormat(formatKey);
     return {
+      formatKey,
+      format,
       quality: Number(els.qualityRange.value) / 100,
       resize: els.resizeToggle.checked,
       maxWidth: Math.max(1, Number(els.maxWidth.value) || 2000),
@@ -707,6 +755,9 @@ body.dark .progress-track { background: #283247; }
     const status = $(".status-badge", item.element);
     const resultInfo = $(".result-info", item.element);
     const downloadBtn = $(".item-download", item.element);
+    const format = getOutputFormat();
+    downloadBtn.title = `Download ${format.label}`;
+    downloadBtn.setAttribute("aria-label", `Download ${format.label}`);
 
     status.className = "status-badge";
     if (item.status === "processing") {
@@ -775,12 +826,12 @@ body.dark .progress-track { background: #283247; }
     els.totalOriginal.textContent = formatBytes(queue.reduce((sum, item) => sum + item.file.size, 0));
 
     const done = queue.filter(item => item.outputBlob);
-    const totalWebp = done.reduce((sum, item) => sum + item.outputBlob.size, 0);
+    const totalOutput = done.reduce((sum, item) => sum + item.outputBlob.size, 0);
     const totalOriginal = queue.reduce((sum, item) => sum + item.file.size, 0);
 
-    els.totalWebp.textContent = done.length ? formatBytes(totalWebp) : "—";
+    els.totalOutput.textContent = done.length ? formatBytes(totalOutput) : "—";
     if (done.length && totalOriginal) {
-      const saving = Math.round((1 - totalWebp / totalOriginal) * 100);
+      const saving = Math.round((1 - totalOutput / totalOriginal) * 100);
       els.totalSaved.textContent = saving >= 0 ? `${saving}%` : `+${Math.abs(saving)}%`;
     } else {
       els.totalSaved.textContent = "—";
@@ -803,15 +854,16 @@ body.dark .progress-track { background: #283247; }
     }
   }
 
-  function canvasToWebP(canvas, quality) {
+  function canvasToFormat(canvas, format, quality) {
     return new Promise((resolve, reject) => {
+      const qualityArg = format.usesQuality ? quality : undefined;
       canvas.toBlob(blob => {
         if (!blob) {
-          reject(new Error("This browser could not create a WebP image."));
+          reject(new Error(`This browser could not create a ${format.label} image.`));
           return;
         }
         resolve(blob);
-      }, "image/webp", quality);
+      }, format.mime, qualityArg);
     });
   }
 
@@ -845,13 +897,17 @@ body.dark .progress-track { background: #283247; }
       const canvas = document.createElement("canvas");
       canvas.width = targetWidth;
       canvas.height = targetHeight;
-      const ctx = canvas.getContext("2d", { alpha: true });
+      const ctx = canvas.getContext("2d", { alpha: settings.format.mime !== "image/jpeg" });
       if (!ctx) throw new Error("Canvas is unavailable.");
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
+      if (settings.format.mime === "image/jpeg") {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+      }
       ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-      item.outputBlob = await canvasToWebP(canvas, settings.quality);
+      item.outputBlob = await canvasToFormat(canvas, settings.format, settings.quality);
       item.outputWidth = targetWidth;
       item.outputHeight = targetHeight;
       item.status = "done";
@@ -896,7 +952,7 @@ body.dark .progress-track { background: #283247; }
 
     const failures = queue.filter(item => item.status === "error").length;
     if (failures) toast(`${failures} image${failures === 1 ? "" : "s"} could not be converted.`, "error");
-    else toast(`All ${queue.length} images converted to WebP.`, "success");
+    else toast(`All ${queue.length} images converted to ${settings.format.label}.`, "success");
   }
 
   function triggerBlobDownload(blob, filename) {
@@ -913,11 +969,11 @@ body.dark .progress-track { background: #283247; }
   function downloadSingle(id) {
     const item = queue.find(entry => entry.id === id);
     if (!item?.outputBlob) return;
-    triggerBlobDownload(item.outputBlob, webpFilename(item.file.name));
+    triggerBlobDownload(item.outputBlob, outputFilename(item.file.name));
   }
 
   // Dependency-free ZIP writer (store method, no additional compression).
-  // WebP is already compressed, so re-compressing it would rarely help much.
+  // Converted image formats are already compressed or encoded, so store mode keeps ZIP creation fast.
   const crcTable = (() => {
     const table = new Uint32Array(256);
     for (let n = 0; n < 256; n++) {
@@ -1025,7 +1081,7 @@ body.dark .progress-track { background: #283247; }
 
     try {
       const zipBlob = await createZip(converted.map(item => ({
-        name: webpFilename(item.file.name),
+        name: outputFilename(item.file.name),
         blob: item.outputBlob
       })));
       const zipName = normalizeZipName(els.zipName.value);
@@ -1048,6 +1104,10 @@ body.dark .progress-track { background: #283247; }
 
   if (localStorage.getItem("hb-webp-theme") === "dark") document.body.classList.add("dark");
 
+  els.outputFormat.addEventListener("change", () => {
+    updateSettingsUI();
+    if (queue.some(item => item.outputBlob)) invalidateResults();
+  });
   els.qualityRange.addEventListener("input", () => {
     updateSettingsUI();
     if (queue.some(item => item.outputBlob)) invalidateResults();
