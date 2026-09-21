@@ -379,9 +379,9 @@ body.dark .progress-track { background: #283247; }
               <span class="mini-badge">AUTO</span>
             </div>
             <div class="zip-input-wrap">
-              <input id="zipName" type="text" value="converted-images-by-HB.zip" spellcheck="false" />
+              <input id="zipName" type="text" value="webp-converted-images-by-HB.zip" spellcheck="false" />
             </div>
-            <p class="field-help">Uses the first image title (up to 10 words), removes a trailing <b>-img-01</b>, then adds <b>-by-HB.zip</b>. Individual files keep their original base names.</p>
+            <p class="field-help">The ZIP name automatically starts with the selected output format, for example <b>webp-converted-images-by-HB.zip</b>. Individual image filenames stay unchanged.</p>
           </div>
 
           <div class="settings-summary">
@@ -609,20 +609,20 @@ body.dark .progress-track { background: #283247; }
     return words.length ? words.join("-") : "converted-images";
   }
 
-  function makeZipNameFromFirstImage() {
-    if (!queue.length) return "converted-images-by-HB.zip";
-    return `${cleanZipBase(queue[0].file.name)}-by-HB.zip`;
+  function makeAutoZipName() {
+    const format = getOutputFormat();
+    return `${format.extension}-converted-images-by-HB.zip`;
   }
 
   function normalizeZipName(value) {
     let name = (value || "").trim();
-    if (!name) name = makeZipNameFromFirstImage();
+    if (!name) name = makeAutoZipName();
     if (!/\.zip$/i.test(name)) name += ".zip";
     return name;
   }
 
   function setAutoZipName() {
-    els.zipName.value = makeZipNameFromFirstImage();
+    els.zipName.value = makeAutoZipName();
   }
 
   function updateSettingsUI() {
@@ -807,7 +807,7 @@ body.dark .progress-track { background: #283247; }
     queue.forEach(item => URL.revokeObjectURL(item.previewUrl));
     queue = [];
     els.queueList.innerHTML = "";
-    els.zipName.value = "converted-images-by-HB.zip";
+    els.zipName.value = makeAutoZipName();
     updateQueueUI();
   }
 
@@ -1111,6 +1111,7 @@ body.dark .progress-track { background: #283247; }
 
   els.outputFormat.addEventListener("change", () => {
     updateSettingsUI();
+    setAutoZipName();
     if (queue.some(item => item.outputBlob)) invalidateResults();
   });
   els.qualityRange.addEventListener("input", () => {
